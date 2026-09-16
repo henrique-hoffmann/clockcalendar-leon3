@@ -1,0 +1,34 @@
+
+2. Estudo de caso - Clock, Calendar e ClockCalendar em duas plataformas
+
+Considerando as classes Clock, Calendar e ClockCalendar desenvolvidas nas aulas anteriores, modelar e implementar uma solução que permita reutilizar o mesmo programa em duas plataformas distintas:
+
+- Computador convencional, executando Linux, Windows ou macOS.
+
+- Sistema embarcado baseado no processador LEON3, utilizando a plataforma Atlys que será apresentada na próxima semana.
+
+O material de referência, incluindo o ambiente de desenvolvimento, exemplos de programas e acesso aos periféricos, está disponível em:
+
+https://gse.ufsc.br/bezerra/?page_id=2338
+
+A principal orientação é desenvolver uma solução com baixo acoplamento entre a lógica da aplicação (algoritmo) e a interface com o usuário. As classes Clock, Calendar e ClockCalendar podem possuir relacionamentos mais próximos entre si, mas a classe responsável pela interação com o usuário deve ser facilmente substituível.
+
+Por exemplo, ao compilar o programa para um computador, poderá ser utilizada uma classe de interface que empregue "cin" e "cout" para possíveis entradas e saídas (interface com o usuário). Já para o LEON3, a interface deverá ser projetada considerando os recursos disponíveis na plataforma Atlys, tais como LEDs, chaves, botões ou o display OLED apresentado no material de apoio.
+
+O objetivo é que a lógica principal de data e hora seja preservada, enquanto a implementação da interface é selecionada ou substituída conforme a plataforma-alvo. Prever também o isolamento de eventuais dependências de hardware relacionadas à obtenção ou atualização do tempo, caso sejam necessárias à solução escolhida (exemplo, utilização de bibliotecas do tipo time).
+
+Existe liberdade para definir a modelagem que considerarem mais adequada. O importante é conseguir justificar as relações entre as classes, identificar quais partes são reutilizáveis e demonstrar como a solução evita que detalhes específicos de uma plataforma contaminem toda a aplicação.
+
+3. Preparação para a aula da próxima semana
+
+A aula de será dedicada à implementação e aos testes desse estudo de caso na plataforma Atlys/LEON3. Todos deverão trazer uma solução previamente desenvolvida, com o código-fonte e a modelagem prontos, de modo que a atividade no laboratório seja concentrada na integração, compilação para o alvo, execução e eventuais ajustes necessários ao hardware real.
+
+Para isso, procurem chegar na aula com:
+
+- A modelagem das classes e seus relacionamentos, preferencialmente representados em um diagrama de classes.
+
+- A implementação da lógica principal (algoritmo) e da interface para computador, compilada e testada.
+
+- Uma proposta concreta de interface para o LEON3, com o código correspondente preparado a partir dos exemplos fornecidos.
+
+- Uma estratégia de testes que permita verificar o comportamento da aplicação mesmo antes de sua execução na placa.
