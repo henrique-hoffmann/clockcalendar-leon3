@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include "Oled.h"
 
+#ifndef OLED
 #define OLED 1
+#endif
 
 using namespace std;
 

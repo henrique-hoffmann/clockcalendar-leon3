@@ -1,116 +1,196 @@
 #include <chrono>
+#include <cstdio>
 #include <iostream>
 #include <thread>
+#include <ctime>
 
 #include "clockcalendar.h"
+#include "examples/OLED/utils.h"
 
-struct ClockCalendarConfiguration
+struct ConfiguracaoRelogio
 {
-    int month;
-    int day;
-    int year;
-    int hour;
-    int minute;
-    int second;
-    int pm;
+    int mes;
+    int dia;
+    int ano;
+    int hora;
+    int minuto;
+    int segundo;
+    int periodo;
 };
 
-class ClockCalendarInterface
+class InterfaceRelogio
 {
 public:
-    virtual ~ClockCalendarInterface() {}
+    virtual ~InterfaceRelogio() {}
 
-    virtual ClockCalendarConfiguration readConfiguration() = 0;
-    virtual void showStartedMessage() = 0;
-    virtual void showClock(const ClockCalendar& clockCalendar) = 0;
-    virtual void waitOneSecond() = 0;
+    virtual ConfiguracaoRelogio lerConfiguracao() = 0;
+    virtual void mostrarMensagemInicial() = 0;
+    virtual void mostrarRelogio(const ClockCalendar& relogio) = 0;
+    virtual void esperarUmSegundo() = 0;
 };
 
-class ConsoleInterface : public ClockCalendarInterface
+class InterfaceConsole : public InterfaceRelogio
 {
 public:
-    ClockCalendarConfiguration readConfiguration()
+    ConfiguracaoRelogio lerConfiguracao()
     {
-        ClockCalendarConfiguration configuration;
+        ConfiguracaoRelogio configuracao;
 
         std::cout << "Digite a data:" << std::endl;
         std::cout << "Mes: ";
-        std::cin >> configuration.month;
+        std::cin >> configuracao.mes;
         std::cout << "Dia: ";
-        std::cin >> configuration.day;
+        std::cin >> configuracao.dia;
         std::cout << "Ano: ";
-        std::cin >> configuration.year;
+        std::cin >> configuracao.ano;
 
         std::cout << std::endl << "Digite a hora:" << std::endl;
         std::cout << "Hora, no formato de 12 horas: ";
-        std::cin >> configuration.hour;
+        std::cin >> configuracao.hora;
         std::cout << "Minuto: ";
-        std::cin >> configuration.minute;
+        std::cin >> configuracao.minuto;
         std::cout << "Segundo: ";
-        std::cin >> configuration.second;
+        std::cin >> configuracao.segundo;
         std::cout << "Digite 0 para AM ou 1 para PM: ";
-        std::cin >> configuration.pm;
+        std::cin >> configuracao.periodo;
 
-        return configuration;
+        return configuracao;
     }
 
-    void showStartedMessage()
+    void mostrarMensagemInicial()
     {
         std::cout << std::endl << "Relogio iniciado:" << std::endl;
     }
 
-    void showClock(const ClockCalendar& clockCalendar)
+    void mostrarRelogio(const ClockCalendar& relogio)
     {
-        std::cout << "\r" << clockCalendar << std::flush;
+        std::cout << "\r" << relogio << std::flush;
     }
 
-    void waitOneSecond()
+    void esperarUmSegundo()
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 };
 
-class ClockCalendarApplication
+class InterfaceAtlys : public InterfaceRelogio
 {
 private:
-    ClockCalendarInterface& interface;
+    ConfiguracaoRelogio configuracaoInicial;
+
+    void mostrarTexto(char texto[], int linha)
+    {
+        printGeneric(texto, linha);
+    }
 
 public:
-    ClockCalendarApplication(ClockCalendarInterface& applicationInterface)
-        : interface(applicationInterface)
+    InterfaceAtlys()
+        : configuracaoInicial{9, 16, 2026, 12, 0, 0, 0}
     {
     }
 
-    void run()
+    ConfiguracaoRelogio lerConfiguracao()
     {
-        ClockCalendarConfiguration configuration = interface.readConfiguration();
+        return configuracaoInicial;
+    }
 
-        ClockCalendar clockCalendar(
-            configuration.month,
-            configuration.day,
-            configuration.year,
-            configuration.hour,
-            configuration.minute,
-            configuration.second,
-            configuration.pm
+    void mostrarMensagemInicial()
+    {
+        char mensagem[] = "Relogio iniciado";
+
+        oledInit();
+        oledClear();
+        mostrarTexto(mensagem, 0);
+    }
+
+    void mostrarRelogio(const ClockCalendar& relogio)
+    {
+        int mes;
+        int dia;
+        int ano;
+        int hora;
+        int minuto;
+        int segundo;
+        int periodo;
+        char data[24];
+        char horario[24];
+
+        relogio.readCalendar(mes, dia, ano);
+        relogio.readClock(hora, minuto, segundo, periodo);
+
+        std::snprintf(data, sizeof(data), "%02d/%02d/%04d", dia, mes, ano);
+        std::snprintf(
+            horario,
+            sizeof(horario),
+            "%02d:%02d:%02d %s",
+            hora,
+            minuto,
+            segundo,
+            periodo ? "PM" : "AM"
         );
 
-        interface.showStartedMessage();
+        mostrarTexto(data, 1);
+        mostrarTexto(horario, 2);
+    }
+
+    void esperarUmSegundo()
+    {
+        clock_t inicio = clock();
+
+        while ((clock() - inicio) < CLOCKS_PER_SEC)
+        {
+        }
+    }
+};
+
+class AplicacaoRelogio
+{
+private:
+    InterfaceRelogio& interface;
+
+public:
+    AplicacaoRelogio(InterfaceRelogio& interfaceAplicacao)
+        : interface(interfaceAplicacao)
+    {
+    }
+
+    void executar()
+    {
+        ConfiguracaoRelogio configuracao = interface.lerConfiguracao();
+
+        ClockCalendar relogio(
+            configuracao.mes,
+            configuracao.dia,
+            configuracao.ano,
+            configuracao.hora,
+            configuracao.minuto,
+            configuracao.segundo,
+            configuracao.periodo
+        );
+
+        interface.mostrarMensagemInicial();
 
         while (true)
         {
-            interface.showClock(clockCalendar);
-            interface.waitOneSecond();
-            clockCalendar.advance();
+            interface.mostrarRelogio(relogio);
+            interface.esperarUmSegundo();
+            relogio.advance();
         }
     }
 };
 
 int main()
 {
-    ConsoleInterface consoleInterface;
-    ClockCalendarApplication application(consoleInterface);
-    application.run();
+#if OLED
+    InterfaceAtlys interfaceAtlys;
+    InterfaceRelogio& interface = interfaceAtlys;
+#else
+    InterfaceConsole interfaceConsole;
+    InterfaceRelogio& interface = interfaceConsole;
+#endif
+
+    AplicacaoRelogio aplicacao(interface);
+    aplicacao.executar();
 
     return 0;
 }
